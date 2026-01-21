@@ -99,6 +99,16 @@ class FakeWithinKernelCUDAArray(object):
         return call(*args, **kwargs)
 
 
+def _to_strided_memory_view(*args, **kwargs):
+    import pytest
+
+    raise pytest.skip("strided memory views not supported in the simulator")
+
+
+def _make_strided_memory_view(*args, **kwargs):
+    return _to_strided_memory_view(*args, **kwargs)
+
+
 class FakeCUDAArray(object):
     """
     Implements the interface of a DeviceArray/DeviceRecord, but mostly just
