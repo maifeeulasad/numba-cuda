@@ -16,6 +16,7 @@ from ctypes import c_void_p
 import numpy as np
 
 from cuda.core.utils import StridedMemoryView
+from cuda.core import Buffer
 
 from numba.cuda.cudadrv import devices, dummyarray
 from numba.cuda.cudadrv import driver as _driver
@@ -1037,9 +1038,16 @@ def _to_strided_memory_view(
         stream_ptr = getattr(stream, "handle", stream)
 
         ctx = devices.get_context()
-        # TODO: potentially rebuild EMM around these (cuda-core) APIs instead
-        # of numba-cuda APIs in the future
-        buf = ctx.device._dev.allocate(nbytes)
+        if not nbytes:
+            # TODO: once cuda-core fixes zero-byte allocation, this branch can go away
+            assert not array_obj.size
+            buf = Buffer.from_handle(
+                ptr=0, size=0, mr=ctx.device._dev.memory_resource
+            )
+        else:
+            # TODO: potentially rebuild EMM around these (cuda-core) APIs instead
+            # of numba-cuda APIs in the future
+            buf = ctx.device._dev.allocate(nbytes, stream=stream)
 
         hostobj = _make_strided_memory_view(array_obj, stream_ptr=stream_ptr)
         devobj = StridedMemoryView.from_buffer(
